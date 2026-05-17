@@ -34,5 +34,9 @@ class DocumentRepository {
 
   Future<int> deleteDocument(int id) => _dbHelper.deleteDocument(id);
 
+  Future<int> deleteFolder(int id) => _dbHelper.deleteFolder(id);
+
   Future<int> updatePage(PageModel page) => _dbHelper.updatePage(page);
+
+  Future<int> deletePage(int id) => _dbHelper.deletePage(id);
 }

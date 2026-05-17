@@ -16,16 +16,14 @@ class DashboardLoading extends DashboardState {}
 class DashboardLoaded extends DashboardState {
   final List<Folder> folders;
   final List<Document> recentDocuments;
-  final String storageUsage;
 
   const DashboardLoaded({
     required this.folders,
     required this.recentDocuments,
-    this.storageUsage = '0 MB',
   });
 
   @override
-  List<Object> get props => [folders, recentDocuments, storageUsage];
+  List<Object> get props => [folders, recentDocuments];
 }
 
 class DashboardError extends DashboardState {

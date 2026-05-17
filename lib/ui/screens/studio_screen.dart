@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:path_provider/path_provider.dart';
 import 'package:signature/signature.dart';
 import '../../core/color_filters.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 class StudioScreen extends StatefulWidget {
   final File image;
@@ -18,6 +19,7 @@ class StudioScreen extends StatefulWidget {
 
 class _StudioScreenState extends State<StudioScreen> {
   final GlobalKey _renderKey = GlobalKey();
+  late File _currentImage;
   List<double> _selectedFilter = FolioFilters.original;
   final SignatureController _signatureController = SignatureController(
     penStrokeWidth: 3,
@@ -25,6 +27,36 @@ class _StudioScreenState extends State<StudioScreen> {
     exportBackgroundColor: Colors.transparent,
   );
   bool _isDrawing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentImage = widget.image;
+  }
+
+  Future<void> _cropImage() async {
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: _currentImage.path,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Crop Image',
+          toolbarColor: Colors.white,
+          toolbarWidgetColor: Colors.black,
+          initAspectRatio: CropAspectRatioPreset.original,
+          lockAspectRatio: false,
+        ),
+        IOSUiSettings(
+          title: 'Crop Image',
+        ),
+      ],
+    );
+
+    if (croppedFile != null) {
+      setState(() {
+        _currentImage = File(croppedFile.path);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -56,12 +88,16 @@ class _StudioScreenState extends State<StudioScreen> {
                 final File imgFile = File(path);
                 await imgFile.writeAsBytes(pngBytes);
 
-                if (!mounted) return;
-                Navigator.pop(context, imgFile);
+                if (context.mounted) {
+                  // Explicitly return the file to the caller
+                  Navigator.pop(context, imgFile);
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error saving: $e')),
-                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error saving: $e')),
+                  );
+                }
               }
             },
           ),
@@ -77,7 +113,7 @@ class _StudioScreenState extends State<StudioScreen> {
                 children: [
                   ColorFiltered(
                     colorFilter: ColorFilter.matrix(_selectedFilter),
-                    child: Image.file(widget.image),
+                    child: Image.file(_currentImage),
                   ),
                   if (_isDrawing)
                     Signature(
@@ -129,7 +165,7 @@ class _StudioScreenState extends State<StudioScreen> {
                       borderRadius: BorderRadius.circular(8),
                       child: ColorFiltered(
                         colorFilter: ColorFilter.matrix(filter),
-                        child: Image.file(widget.image, fit: BoxFit.cover),
+                        child: Image.file(_currentImage, fit: BoxFit.cover),
                       ),
                     ),
                   ),
@@ -158,7 +194,7 @@ class _StudioScreenState extends State<StudioScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -186,7 +222,7 @@ class _StudioScreenState extends State<StudioScreen> {
           _buildToolItem(
             icon: Icons.crop,
             label: 'Crop',
-            onTap: () {},
+            onTap: _cropImage,
           ),
         ],
       ),

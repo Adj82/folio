@@ -24,3 +24,11 @@ class DeleteDocument extends DashboardEvent {
   @override
   List<Object> get props => [id];
 }
+
+class DeleteFolder extends DashboardEvent {
+  final int id;
+  const DeleteFolder(this.id);
+
+  @override
+  List<Object> get props => [id];
+}

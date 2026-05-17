@@ -112,6 +112,15 @@ class DatabaseHelper {
     );
   }
 
+  Future<int> deleteFolder(int id) async {
+    final db = await instance.database;
+    return await db.delete(
+      'folders',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   // Page CRUD
   Future<int> insertPage(PageModel page) async {
     final db = await instance.database;
@@ -136,6 +145,15 @@ class DatabaseHelper {
       page.toMap(),
       where: 'id = ?',
       whereArgs: [page.id],
+    );
+  }
+
+  Future<int> deletePage(int id) async {
+    final db = await instance.database;
+    return await db.delete(
+      'pages',
+      where: 'id = ?',
+      whereArgs: [id],
     );
   }
 
