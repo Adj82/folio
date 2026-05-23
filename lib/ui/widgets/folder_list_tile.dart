@@ -64,9 +64,12 @@ class FolderListTile extends StatelessWidget {
           ),
           title: Text(
             folder.name,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
           ),
-          subtitle: Text('${folder.createdAt.toString().split(' ')[0]} • Offline'),
+          subtitle: Text(
+            '${folder.createdAt.toString().split(' ')[0]} • Offline',
+            style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w600),
+          ),
           trailing: const Icon(Icons.chevron_right_rounded, color: Colors.black26),
         ),
       ),

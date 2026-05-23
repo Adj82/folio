@@ -121,7 +121,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return const SliverToBoxAdapter(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 20),
-          child: Text('No folders yet.', style: TextStyle(color: Colors.black54)),
+          child: Text('No folders yet.', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
         ),
       );
     }
