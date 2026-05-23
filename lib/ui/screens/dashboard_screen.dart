@@ -35,11 +35,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text(
           'Folio',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 26, letterSpacing: -1.5),
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 26, letterSpacing: -1.5, color: Colors.black),
         ),
         centerTitle: false,
         backgroundColor: Colors.white,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: BlocBuilder<DashboardBloc, DashboardState>(
         builder: (context, state) {
