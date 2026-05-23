@@ -16,6 +16,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
   }) : super(ScannerInitial()) {
     on<PickImages>(_onPickImages);
     on<TakePhoto>(_onTakePhoto);
+    on<ResetScanner>(_onResetScanner);
     on<RemoveImage>(_onRemoveImage);
     on<ReorderImages>(_onReorderImages);
     on<UpdateImage>(_onUpdateImage);
@@ -63,6 +64,10 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
     } catch (e) {
       emit(ScannerError(e.toString()));
     }
+  }
+
+  void _onResetScanner(ResetScanner event, Emitter<ScannerState> emit) {
+    emit(ScannerInitial());
   }
 
   void _onRemoveImage(RemoveImage event, Emitter<ScannerState> emit) {

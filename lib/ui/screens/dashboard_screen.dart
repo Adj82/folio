@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/dashboard/dashboard_bloc.dart';
+import '../../blocs/dashboard/dashboard_event.dart';
 import '../../blocs/dashboard/dashboard_state.dart';
+import '../../blocs/scanner/scanner_bloc.dart';
+import '../../blocs/scanner/scanner_event.dart';
+import '../../repositories/document_repository.dart';
+import '../widgets/document_list_tile.dart';
+import '../widgets/folder_list_tile.dart';
 import 'scanner_screen.dart';
 import 'document_detail_screen.dart';
 import 'documents_by_folder_screen.dart';
-import '../../repositories/document_repository.dart';
-import '../../blocs/dashboard/dashboard_event.dart';
-import '../widgets/document_list_tile.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -44,26 +47,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is DashboardError) {
-            return Center(child: Text(state.message));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(state.message, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  TextButton(
+                    onPressed: () => context.read<DashboardBloc>().add(LoadDashboard()),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
           }
           if (state is DashboardLoaded) {
             return CustomScrollView(
               controller: _scrollController,
               physics: const BouncingScrollPhysics(),
               slivers: [
-                _buildFolderHeader(context, state),
-                _buildFolderList(context, state),
-                _buildRecentHeader(context),
-                _buildRecentList(context, state),
+                _buildHeader('Folders (${state.folders.length})', onAdd: () => _showAddFolderDialog(context)),
+                _buildFolderList(state),
+                _buildHeader('Recent Documents'),
+                _buildRecentList(state),
                 const SliverToBoxAdapter(child: SizedBox(height: 100)),
               ],
             );
           }
-          return const SizedBox.shrink();
+          return const Center(child: Text('Initializing...'));
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
+          context.read<ScannerBloc>().add(ResetScanner());
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ScannerScreen()),
@@ -76,7 +93,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildFolderHeader(BuildContext context, DashboardLoaded state) {
+  Widget _buildHeader(String title, {VoidCallback? onAdd}) {
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
       sliver: SliverToBoxAdapter(
@@ -84,53 +101,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Folders (${state.folders.length})',
+              title,
               style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.black),
             ),
-            IconButton(
-              onPressed: () => _showAddFolderDialog(context),
-              icon: const Icon(Icons.create_new_folder_outlined, color: Colors.black),
-            ),
+            if (onAdd != null)
+              IconButton(
+                onPressed: onAdd,
+                icon: const Icon(Icons.create_new_folder_outlined, color: Colors.black),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFolderList(BuildContext context, DashboardLoaded state) {
+  Widget _buildFolderList(DashboardLoaded state) {
+    if (state.folders.isEmpty) {
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Text('No folders yet.', style: TextStyle(color: Colors.black54)),
+        ),
+      );
+    }
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
-              (context, index) {
+          (context, index) {
             final folder = state.folders[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: ListTile(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => DocumentsByFolderScreen(folder: folder)),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  leading: Container(
-                    height: 52,
-                    width: 52,
-                    decoration: BoxDecoration(color: const Color(0xFFE3F2FD), borderRadius: BorderRadius.circular(12)),
-                    child: const Icon(Icons.folder_rounded, color: Color(0xFF1976D2), size: 32),
-                  ),
-                  title: Text(folder.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  subtitle: Text('${folder.createdAt.toString().split(' ')[0]} • Offline'),
-                  trailing: const Icon(Icons.chevron_right_rounded, color: Colors.black26),
-                ),
+            return FolderListTile(
+              folder: folder,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DocumentsByFolderScreen(folder: folder)),
               ),
+              onDelete: () => context.read<DashboardBloc>().add(DeleteFolder(folder.id!)),
             );
           },
           childCount: state.folders.length,
@@ -139,24 +145,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildRecentHeader(BuildContext context) {
-    return const SliverPadding(
-      padding: EdgeInsets.fromLTRB(20, 24, 20, 12),
-      sliver: SliverToBoxAdapter(
-        child: Text(
-          'Recent Documents',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.black),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecentList(BuildContext context, DashboardLoaded state) {
+  Widget _buildRecentList(DashboardLoaded state) {
     if (state.recentDocuments.isEmpty) {
       return const SliverToBoxAdapter(
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 40),
-          child: Center(child: Text('No scans yet', style: TextStyle(fontWeight: FontWeight.bold))),
+          child: Center(child: Text('No scans yet. tap "New Scan" to start.', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black45))),
         ),
       );
     }
@@ -164,7 +158,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
-              (context, index) {
+          (context, index) {
             final doc = state.recentDocuments[index];
             return Padding(
               padding: const EdgeInsets.only(bottom: 12.0),

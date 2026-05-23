@@ -12,6 +12,8 @@ class PickImages extends ScannerEvent {}
 
 class TakePhoto extends ScannerEvent {}
 
+class ResetScanner extends ScannerEvent {}
+
 class RemoveImage extends ScannerEvent {
   final int index;
   const RemoveImage(this.index);
